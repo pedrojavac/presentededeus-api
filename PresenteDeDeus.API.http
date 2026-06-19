@@ -1,0 +1,14 @@
+@PresenteDeDeus.API_HostAddress = http://localhost:5193
+
+### Login (Admin)
+POST {{PresenteDeDeus.API_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "login": "emerson",
+  "senha": "796510"
+}
+
+### Listar produtos
+GET {{PresenteDeDeus.API_HostAddress}}/api/produto
+Accept: application/json

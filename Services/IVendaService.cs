@@ -12,6 +12,7 @@ namespace PresenteDeDeus.API.Services
         Task<VendaResponseDto> RegistrarVendaAsync(NovaVendaDto dto, ClaimsPrincipal operador);
         Task<List<VendaResponseDto>> ListarVendasAsync(ClaimsPrincipal operador);
         Task<VendaResponseDto?> BuscarPorIdAsync(int id, ClaimsPrincipal operador);
+        Task<bool> RemoverVendaAsync(int id, ClaimsPrincipal operador);
     }
 
     public class VendaService : IVendaService
@@ -126,6 +127,39 @@ namespace PresenteDeDeus.API.Services
             return MapVendaDto(venda);
         }
 
+        // Remove definitivamente a venda do banco e devolve os itens ao estoque.
+        // Apenas administradores podem excluir vendas.
+        public async Task<bool> RemoverVendaAsync(int id, ClaimsPrincipal operador)
+        {
+            var isAdmin = operador.IsInRole("Admin");
+            if (!isAdmin)
+                throw new UnauthorizedAccessException(
+                    "Apenas administradores podem excluir vendas.");
+
+            var venda = await _vendaRepo.BuscarPorIdAsync(id);
+            if (venda == null) return false;
+
+            using var tx = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Devolve a quantidade de cada item ao estoque do produto
+                foreach (var item in venda.Itens)
+                {
+                    await _produtoRepo.AtualizarEstoqueAsync(
+                        item.ProdutoId, item.Quantidade);
+                }
+
+                await _vendaRepo.RemoverAsync(venda);
+                await tx.CommitAsync();
+                return true;
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
+        }
+
         private static VendaResponseDto MapVendaDto(Venda v) => new()
         {
             Id = v.Id,
@@ -144,3 +178,5 @@ namespace PresenteDeDeus.API.Services
         };
     }
 }
+
+

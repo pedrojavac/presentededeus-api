@@ -9,6 +9,7 @@ namespace PresenteDeDeus.API.Repositories
         Task<List<Venda>> ListarPorOperadorAsync(int operadorId);
         Task<List<Venda>> ListarTodasAsync();
         Task<Venda?> BuscarPorIdAsync(int id);
+        Task RemoverAsync(Venda venda);
     }
 
     public class VendaRepository : IVendaRepository
@@ -41,6 +42,14 @@ namespace PresenteDeDeus.API.Repositories
                 .Include(v => v.Operador)
                 .Include(v => v.Itens).ThenInclude(i => i.Produto)
                 .FirstOrDefaultAsync(v => v.Id == id);
+
+        // Remove definitivamente a venda (e seus itens, via cascade) do banco
+        public async Task RemoverAsync(Venda venda)
+        {
+            _context.Vendas.Remove(venda);
+            await _context.SaveChangesAsync();
+        }
     }
 }
+
 

@@ -64,5 +64,28 @@ namespace PresenteDeDeus.API.Controllers
                 return BadRequest(new { mensagem = ex.Message });
             }
         }
+
+        // DELETE /api/venda/5
+        // Exclui definitivamente a venda e devolve os itens ao estoque.
+        // Apenas administradores podem excluir.
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Remover(int id)
+        {
+            try
+            {
+                var removido = await _service.RemoverVendaAsync(id, User);
+                return removido ? NoContent() : NotFound();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(); // HTTP 403 se não for Admin
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { mensagem = ex.Message });
+            }
+        }
     }
 }
+
+
